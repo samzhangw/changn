@@ -27,6 +27,7 @@
   .small { padding:6px 8px; font-size:13px; }
   .meta { font-size:12px; color:#5b6b83; margin-top:8px; }
   .face-indicator { position:absolute; right:6px; top:6px; background:rgba(0,0,0,0.5); color:#fff; padding:2px 6px;border-radius:6px;font-size:12px; }
+  .usage-indicator { position:absolute; bottom:2px; right:2px; background:rgba(255,0,0,0.8); color:#fff; padding:1px 4px; border-radius:3px; font-size:9px; font-weight:bold; }
   .board-size-input { width:50px; padding:4px; border-radius:4px; border:1px solid #c8d3e6; }
   
   /* 列印樣式：只印出棋盤 */
@@ -52,7 +53,7 @@
     </div>
 
     <div id="sidebars"></div>
-    <div class="meta">說明：盤上積木可旋轉（雙擊旋轉），每個積木有4個面，點擊積木可切換面，每個積木同時僅能有一個面在盤上，可右鍵移除積木，匯出 PNG。</div>
+    <div class="meta">說明：盤上積木可旋轉（雙擊旋轉），每個積木有4個面，點擊積木可切換面，每個積木同時僅能有一個面在盤上，可右鍵移除積木，匯出 PNG。紅色標籤表示積木未使用，綠色標籤表示積木已使用。</div>
   </div>
 
   <div id="board-wrap">
@@ -149,6 +150,7 @@ function createSidebar(pieceIndex){
       }
       
       // 面數標籤
+          // 面數標籤
       const faceLabel = document.createElement('div');
       faceLabel.textContent = `${index + 1}`;
       faceLabel.style.position = 'absolute';
@@ -161,6 +163,21 @@ function createSidebar(pieceIndex){
       faceLabel.style.fontSize = '10px';
       faceLabel.style.fontWeight = 'bold';
       faceContainer.appendChild(faceLabel);
+      
+      // 使用狀態指示器
+      const usageIndicator = document.createElement('div');
+      usageIndicator.className = 'usage-indicator';
+      usageIndicator.textContent = '未使用';
+      usageIndicator.style.position = 'absolute';
+      usageIndicator.style.bottom = '2px';
+      usageIndicator.style.right = '2px';
+      usageIndicator.style.background = 'rgba(255,0,0,0.8)';
+      usageIndicator.style.color = '#fff';
+      usageIndicator.style.padding = '1px 4px';
+      usageIndicator.style.borderRadius = '3px';
+      usageIndicator.style.fontSize = '9px';
+      usageIndicator.style.fontWeight = 'bold';
+      faceContainer.appendChild(usageIndicator);
       
       // 拖曳事件
       faceContainer.addEventListener('mousedown', ev => {
@@ -216,6 +233,10 @@ for(let i=0;i<PIECES;i++) createSidebar(i);
 function createBoardPiece(facesArray,w,h,initCol=0,initRow=0,pieceIndex=0,faceUrl=''){
   if(activePiecesOnBoard.get(pieceIndex)) return null;
   activePiecesOnBoard.set(pieceIndex, true);
+  
+  // 更新側邊欄的使用狀態
+  updateUsageStatus(pieceIndex, true);
+  
   const el=document.createElement('div'); el.className='piece';
   el.style.width=w+'px'; el.style.height=h+'px';
   el.dataset.w=w; el.dataset.h=h; el.dataset.rotation='0';
@@ -259,6 +280,10 @@ function createBoardPiece(facesArray,w,h,initCol=0,initRow=0,pieceIndex=0,faceUr
 function removeBoardPiece(piece){
   const pieceIndex = parseInt(piece.dataset.pieceIndex);
   activePiecesOnBoard.delete(pieceIndex);
+  
+  // 更新側邊欄的使用狀態
+  updateUsageStatus(pieceIndex, false);
+  
   piece.remove();
 }
 
@@ -316,6 +341,22 @@ function applyTransformWithAnchor(piece){
   const left=parseFloat(piece.style.left)||0; const top=parseFloat(piece.style.top)||0;
   piece.style.left=(left-dx)+'px'; piece.style.top=(top-dy)+'px';
   snapToGrid(piece);
+}
+
+// 更新積木使用狀態的函數
+function updateUsageStatus(pieceIndex, isUsed) {
+  const sidebar = document.querySelector(`[data-piece-index="${pieceIndex}"]`).closest('.sidebar');
+  const usageIndicators = sidebar.querySelectorAll('.usage-indicator');
+  
+  usageIndicators.forEach(indicator => {
+    if (isUsed) {
+      indicator.textContent = '使用中';
+      indicator.style.background = 'rgba(0,255,0,0.8)';
+    } else {
+      indicator.textContent = '未使用';
+      indicator.style.background = 'rgba(255,0,0,0.8)';
+    }
+  });
 }
 
 printBtn.addEventListener('click',()=>{ window.print(); });
