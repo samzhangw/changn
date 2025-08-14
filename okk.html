@@ -2,13 +2,42 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>自訂大小棋盤 + 吸附方格（二維格子追蹤積木）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>自訂大小棋盤 + 四面積木暫置區（單積木單面盤上，可移除積木、旋轉、匯出PNG）</title>
 <style>
   :root{ --cell-cm:2.5cm; }
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Noto Sans TC, sans-serif; display: flex; gap: 20px; padding:16px; }
-  #left { width: 240px; }
-  #sidebar { width: 100%; border: 2px solid #d0d7e6; padding: 8px; display: flex; flex-wrap: wrap; gap: 8px; min-height: 320px; background:#fff; border-radius:8px; }
-  #board-wrap { background: #f6f7fb; padding: 12px; border-radius: 12px; }
+  body { 
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Noto Sans TC, sans-serif; 
+    display: flex; 
+    gap: 20px; 
+    padding:16px; 
+    margin: 0;
+    min-height: 100vh;
+  }
+  #left { 
+    width: 280px; 
+    min-width: 280px;
+  }
+  .sidebar-container { margin-bottom:12px; }
+  .sidebar-title { font-weight:bold; margin-bottom:4px; }
+  .sidebar { 
+    width: 100%; 
+    border: 2px solid #d0d7e6; 
+    padding: 8px; 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+    min-height: 80px; 
+    background:#fff; 
+    border-radius:8px; 
+  }
+  #board-wrap { 
+    background: #f6f7fb; 
+    padding: 12px; 
+    border-radius: 12px; 
+    flex:1; 
+    min-width: 0;
+  }
   #board {
     position: relative;
     background-image: linear-gradient(to right, #e7ecf5 1px, transparent 1px),
@@ -17,32 +46,114 @@
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(18,35,62,.06);
   }
-  .piece, .piece-sidebar { position: relative; display:block; cursor: grab; user-select: none; transform-origin: top left; border-radius: 6px; overflow: hidden; }
+  .piece, .piece-sidebar { 
+    position: relative; 
+    display:block; 
+    cursor: grab; 
+    user-select: none; 
+    transform-origin: top left; 
+    border-radius: 6px; 
+    overflow: hidden; 
+    touch-action: none; /* 防止觸控滾動 */
+  }
   .piece { position: absolute; }
-  .piece img, .piece-sidebar img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events:none; }
-  .controls { margin-bottom:8px; display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
-  .btn { padding:8px 10px; border-radius:8px; border:1px solid #c8d3e6; background:#fff; cursor:pointer; }
+  .piece img, .piece-sidebar img { 
+    display: block; 
+    width: 100%; 
+    height: 100%; 
+    object-fit: contain; 
+    pointer-events:none; 
+  }
+  .controls { 
+    margin-bottom:8px; 
+    display:flex; 
+    gap:8px; 
+    align-items:center; 
+    flex-wrap: wrap; 
+  }
+  .btn { 
+    padding:8px 10px; 
+    border-radius:8px; 
+    border:1px solid #c8d3e6; 
+    background:#fff; 
+    cursor:pointer; 
+    min-height: 44px; /* 觸控友善的最小高度 */
+    touch-action: manipulation;
+  }
   .small { padding:6px 8px; font-size:13px; }
   .meta { font-size:12px; color:#5b6b83; margin-top:8px; }
-  .face-indicator { position:absolute; right:6px; top:6px; background:rgba(0,0,0,0.5); color:#fff; padding:2px 6px;border-radius:6px;font-size:12px; }
-  .board-size-input { width:50px; padding:4px; border-radius:4px; border:1px solid #c8d3e6; }
+  .face-indicator { 
+    position:absolute; 
+    right:6px; 
+    top:6px; 
+    background:rgba(0,0,0,0.5); 
+    color:#fff; 
+    padding:2px 6px;
+    border-radius:6px;
+    font-size:12px; 
+  }
+  .board-size-input { 
+    width:50px; 
+    padding:4px; 
+    border-radius:4px; 
+    border:1px solid #c8d3e6; 
+    min-height: 44px; /* 觸控友善 */
+  }
+  
+  /* 手機響應式設計 */
+  @media (max-width: 768px) {
+    body { 
+      flex-direction: column; 
+      gap: 10px; 
+      padding: 8px; 
+    }
+    #left { 
+      width: 100%; 
+      min-width: auto; 
+    }
+    .controls { 
+      flex-direction: column; 
+      align-items: stretch; 
+    }
+    .controls > div { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .btn { 
+      flex: 1; 
+      margin: 2px; 
+    }
+    #board-wrap { 
+      padding: 8px; 
+    }
+    :root { --cell-cm: 2cm; } /* 手機上稍微縮小格子 */
+  }
+  
+  /* 列印樣式：只印出棋盤 */
+  @media print {
+    @page { margin: 10mm; }
+    body { display:block; padding:0; }
+    #left, .controls, .meta, .sidebar-container { display:none !important; }
+    #board-wrap { padding:0 !important; background:#fff !important; }
+    #board { box-shadow:none !important; border-color:#c8d3e6; }
+    .face-indicator { display:none !important; }
+  }
 </style>
 </head>
 <body>
   <div id="left">
     <div class="controls">
-      <label class="btn">
-        上傳積木（可多選）
-        <input id="upload" type="file" multiple accept="image/*" hidden>
-      </label>
-      <button id="editFaces" class="btn small">編輯面</button>
-      <input id="faceFiles" type="file" accept="image/*" multiple hidden>
       <div>行：<input id="rowsInput" type="number" class="board-size-input" value="4" min="1"></div>
       <div>列：<input id="colsInput" type="number" class="board-size-input" value="8" min="1"></div>
       <button id="resizeBoard" class="btn small">更新棋盤大小</button>
+      <button id="printBoard" class="btn small">列印</button>
+      <button id="flipH" class="btn small">水平鏡像</button>
+      <button id="flipV" class="btn small">垂直鏡像</button>
     </div>
-    <div id="sidebar">暫置區（拖到盤上）</div>
-    <div class="meta">說明：盤上積木可按 1-4 切換面、按 R 旋轉</div>
+
+    <div id="sidebars"></div>
+    <div class="meta">說明：盤上積木可旋轉（雙擊旋轉），每個積木有4個面，點擊積木可切換面，每個積木同時僅能有一個面在盤上，可右鍵移除積木，匯出 PNG。</div>
   </div>
 
   <div id="board-wrap">
@@ -50,23 +161,29 @@
   </div>
 
 <script>
-let COLS=8, ROWS=4, LIMIT=10;
-let boardGrid = [];
+let COLS=8, ROWS=4, PIECES=10;
 const board=document.getElementById('board');
-const sidebar=document.getElementById('sidebar');
-const upload=document.getElementById('upload');
-const editFacesBtn=document.getElementById('editFaces');
-const faceFilesInput=document.getElementById('faceFiles');
+const sidebarsContainer=document.getElementById('sidebars');
 const rowsInput=document.getElementById('rowsInput');
 const colsInput=document.getElementById('colsInput');
 const resizeBoardBtn=document.getElementById('resizeBoard');
+const printBtn=document.getElementById('printBoard');
+const flipHBtn=document.getElementById('flipH');
+const flipVBtn=document.getElementById('flipV');
 let selectedPiece=null, dragging=false, dragFromSidebar=false;
 let offsetX=0, offsetY=0;
+let activePiecesOnBoard = new Map();
 
-function initBoardGrid(){
-  boardGrid = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+// 觸控事件處理
+function getTouchPos(e) {
+  const touch = e.touches ? e.touches[0] : e;
+  return { x: touch.clientX, y: touch.clientY };
 }
-initBoardGrid();
+
+function getElementPos(element) {
+  const rect = element.getBoundingClientRect();
+  return { x: rect.left, y: rect.top };
+}
 
 function updateBoardSize(){
   ROWS=parseInt(rowsInput.value)||4;
@@ -74,63 +191,226 @@ function updateBoardSize(){
   board.style.width=`calc(var(--cell-cm) * ${COLS})`;
   board.style.height=`calc(var(--cell-cm) * ${ROWS})`;
   board.style.backgroundSize=`calc(var(--cell-cm)) calc(var(--cell-cm))`;
-  initBoardGrid();
   board.querySelectorAll('.piece').forEach(p=>snapToGrid(p));
 }
 resizeBoardBtn.addEventListener('click',updateBoardSize);
 
-function makeSidebarThumb(src,w,h){
-  const wrap=document.createElement('div');
-  wrap.className='piece-sidebar';
-  wrap.style.width=w+'px'; wrap.style.height=h+'px';
-  const img=document.createElement('img'); img.src=src;
-  wrap.appendChild(img);
-  wrap.dataset.faces=JSON.stringify([src]);
-  wrap.dataset.faceIndex='0'; wrap.dataset.w=w; wrap.dataset.h=h; wrap.dataset.rotation='0';
-  wrap.addEventListener('mousedown',e=>{selectedPiece=wrap; dragFromSidebar=true; offsetX=e.offsetX; offsetY=e.offsetY;});
-  return wrap;
-}
+function createSidebar(pieceIndex){
+  const container=document.createElement('div'); container.className='sidebar-container';
+  const title=document.createElement('div'); title.className='sidebar-title'; title.textContent=`積木 ${pieceIndex+1}`; container.appendChild(title);
+  const sidebar=document.createElement('div'); sidebar.className='sidebar'; container.appendChild(sidebar);
 
-upload.addEventListener('change',e=>{
-  const files=Array.from(e.target.files).slice(0,LIMIT);
-  files.forEach(file=>{
-    const url=URL.createObjectURL(file);
-    const img=new Image(); img.src=url;
-    img.onload=()=>{sidebar.appendChild(makeSidebarThumb(url,img.naturalWidth,img.naturalHeight));};
+  // 預設圖片路徑 - 4個面
+  const defaultImagePaths = [
+    `images/積木${pieceIndex+1}/方塊測試 (${pieceIndex+1}).png`,
+    `images/積木${pieceIndex+1}/方塊測試 (${pieceIndex+1})_2.png`,
+    `images/積木${pieceIndex+1}/方塊測試 (${pieceIndex+1})_3.png`,
+    `images/積木${pieceIndex+1}/方塊測試 (${pieceIndex+1})_4.png`
+  ];
+  
+  // 建立4個面的縮圖容器
+  const createFaceThumbnails = (faces, isColorMode = false) => {
+    sidebar.innerHTML = '';
+    
+    faces.forEach((face, index) => {
+      const faceContainer = document.createElement('div');
+      faceContainer.className = 'piece-sidebar';
+      faceContainer.style.position = 'relative';
+      faceContainer.style.margin = '2px';
+      faceContainer.style.cursor = 'pointer';
+      faceContainer.dataset.faceIndex = String(index);
+      faceContainer.dataset.pieceIndex = pieceIndex;
+      faceContainer.dataset.faceUrl = face;
+      
+      if (isColorMode) {
+        // 彩色方塊模式
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#a55eea', '#fd79a8', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24'];
+        const sizes = [30, 30, 30, 30, 30, 30, 60, 60, 60, 60];
+        const heights = [30, 30, 30, 30, 30, 30, 15, 15, 15, 15];
+        
+        faceContainer.style.width = sizes[pieceIndex] + 'px';
+        faceContainer.style.height = heights[pieceIndex] + 'px';
+        faceContainer.style.backgroundColor = face;
+        faceContainer.style.border = '1px solid #333';
+        faceContainer.dataset.w = sizes[pieceIndex];
+        faceContainer.dataset.h = heights[pieceIndex];
+      } else {
+        // 圖片模式
+        const img = new Image();
+        img.src = face;
+        img.onload = () => {
+          faceContainer.style.width = (img.naturalWidth / 2) + 'px'; // 縮小顯示
+          faceContainer.style.height = (img.naturalHeight / 2) + 'px';
+          faceContainer.dataset.w = img.naturalWidth;
+          faceContainer.dataset.h = img.naturalHeight;
+          faceContainer.appendChild(img);
+        };
+        img.onerror = () => {
+          // 如果圖片載入失敗，使用彩色方塊
+          const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#a55eea', '#fd79a8', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24'];
+          const sizes = [30, 30, 30, 30, 30, 30, 60, 60, 60, 60];
+          const heights = [30, 30, 30, 30, 30, 30, 15, 15, 15, 15];
+          
+          faceContainer.style.width = sizes[pieceIndex] + 'px';
+          faceContainer.style.height = heights[pieceIndex] + 'px';
+          faceContainer.style.backgroundColor = colors[pieceIndex];
+          faceContainer.style.border = '1px solid #333';
+          faceContainer.dataset.w = sizes[pieceIndex];
+          faceContainer.dataset.h = heights[pieceIndex];
+        };
+      }
+      
+      // 面數標籤
+      const faceLabel = document.createElement('div');
+      faceLabel.textContent = `${index + 1}`;
+      faceLabel.style.position = 'absolute';
+      faceLabel.style.top = '2px';
+      faceLabel.style.left = '2px';
+      faceLabel.style.background = 'rgba(0,0,0,0.7)';
+      faceLabel.style.color = '#fff';
+      faceLabel.style.padding = '1px 4px';
+      faceLabel.style.borderRadius = '3px';
+      faceLabel.style.fontSize = '10px';
+      faceLabel.style.fontWeight = 'bold';
+      faceContainer.appendChild(faceLabel);
+      
+      // 拖曳事件
+      faceContainer.addEventListener('mousedown', ev => {
+        if(activePiecesOnBoard.get(pieceIndex)) return;
+        selectedPiece = faceContainer;
+        dragFromSidebar = true;
+        offsetX = ev.offsetX;
+        offsetY = ev.offsetY;
+      });
+      
+      // 觸控事件
+      faceContainer.addEventListener('touchstart', ev => {
+        ev.preventDefault();
+        if(activePiecesOnBoard.get(pieceIndex)) return;
+        selectedPiece = faceContainer;
+        dragFromSidebar = true;
+        const touch = ev.touches[0];
+        const rect = faceContainer.getBoundingClientRect();
+        offsetX = touch.clientX - rect.left;
+        offsetY = touch.clientY - rect.top;
+      });
+      
+      sidebar.appendChild(faceContainer);
+    });
+  };
+  
+  // 嘗試載入預設圖片
+  const testImg = new Image();
+  testImg.src = defaultImagePaths[0];
+  testImg.onload = () => {
+    // 圖片載入成功，建立4個面的縮圖
+    createFaceThumbnails(defaultImagePaths);
+  };
+  
+  testImg.onerror = () => {
+    // 圖片載入失敗，建立彩色方塊的4個面
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#a55eea', '#fd79a8', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24'];
+    const faceColors = [
+      colors[pieceIndex],
+      colors[(pieceIndex + 1) % colors.length],
+      colors[(pieceIndex + 2) % colors.length],
+      colors[(pieceIndex + 3) % colors.length]
+    ];
+    createFaceThumbnails(faceColors, true);
+  };
+
+  const fileInput=document.createElement('input');
+  fileInput.type='file'; fileInput.accept='image/*'; fileInput.multiple=true; fileInput.hidden=true;
+  fileInput.addEventListener('change',e=>{
+    const files=Array.from(fileInput.files).slice(0,4);
+    const faceUrls = [];
+    for(let i = 0; i < 4; i++) {
+      faceUrls.push(i < files.length ? URL.createObjectURL(files[i]) : URL.createObjectURL(files[0]));
+    }
+    createFaceThumbnails(faceUrls);
   });
-  upload.value='';
-});
 
-function createBoardPiece(facesArray,w,h,initCol=0,initRow=0){
+  const uploadBtn=document.createElement('button'); uploadBtn.textContent='上傳'; uploadBtn.className='btn small';
+  uploadBtn.addEventListener('click',()=>fileInput.click());
+  container.appendChild(uploadBtn); container.appendChild(fileInput);
+  sidebarsContainer.appendChild(container);
+}
+for(let i=0;i<PIECES;i++) createSidebar(i);
+
+function createBoardPiece(facesArray,w,h,initCol=0,initRow=0,pieceIndex=0,faceUrl=''){
+  if(activePiecesOnBoard.get(pieceIndex)) return null;
+  activePiecesOnBoard.set(pieceIndex, true);
   const el=document.createElement('div'); el.className='piece';
   el.style.width=w+'px'; el.style.height=h+'px';
   el.dataset.w=w; el.dataset.h=h; el.dataset.rotation='0';
-  el.dataset.faces=JSON.stringify(facesArray); el.dataset.faceIndex='0';
+  
+  // 如果 facesArray 是單一值，建立4個面的陣列
+  if (typeof facesArray === 'string') {
+    facesArray = [facesArray, facesArray, facesArray, facesArray];
+  }
+  
+  el.dataset.faces=JSON.stringify(facesArray); 
+  el.dataset.faceIndex='0';
+  el.dataset.faceUrl = faceUrl; 
+  el.dataset.pieceIndex = pieceIndex;
   const img=document.createElement('img'); img.src=facesArray[0]; el.appendChild(img);
-  const indicator=document.createElement('div'); indicator.className='face-indicator'; indicator.textContent='1/4'; el.appendChild(indicator);
-  board.appendChild(el);
-  snapToGrid(el,initCol,initRow);
+  const indicator=document.createElement('div'); indicator.className='face-indicator'; indicator.textContent='1/'+facesArray.length; el.appendChild(indicator);
+  board.appendChild(el); snapToGrid(el,initCol,initRow);
+
   el.addEventListener('mousedown',e=>{
     e.stopPropagation(); selectedPiece=el; el.style.zIndex=999;
     const rect=el.getBoundingClientRect();
     offsetX=e.clientX-rect.left; offsetY=e.clientY-rect.top; dragging=true; dragFromSidebar=false;
   });
-  el.addEventListener('contextmenu',e=>{e.preventDefault(); rotatePiece(el,90);});
+
+  // 觸控事件
+  el.addEventListener('touchstart',e=>{
+    e.preventDefault(); e.stopPropagation(); selectedPiece=el; el.style.zIndex=999;
+    const touch = e.touches[0];
+    const rect=el.getBoundingClientRect();
+    offsetX=touch.clientX-rect.left; offsetY=touch.clientY-rect.top; dragging=true; dragFromSidebar=false;
+  });
+
+  el.addEventListener('dblclick',()=>rotatePiece(el,90));
+  el.addEventListener('contextmenu',e=>{ e.preventDefault(); removeBoardPiece(el); });
+  
+  // 點擊切換面
+  el.addEventListener('click', ev => {
+    if(ev.target === indicator) return; // 避免點擊指示器時切換
+    const currentFaceIndex = parseInt(el.dataset.faceIndex || '0');
+    const nextFaceIndex = (currentFaceIndex + 1) % facesArray.length;
+    el.dataset.faceIndex = String(nextFaceIndex);
+    el.dataset.faceUrl = facesArray[nextFaceIndex];
+    el.querySelector('img').src = facesArray[nextFaceIndex];
+    indicator.textContent = `${nextFaceIndex + 1}/${facesArray.length}`;
+  });
+  
+  // 加入長按旋轉功能
+  addLongPressRotation(el);
+  
   return el;
 }
 
+function removeBoardPiece(piece){
+  const pieceIndex = parseInt(piece.dataset.pieceIndex);
+  activePiecesOnBoard.delete(pieceIndex);
+  piece.remove();
+}
+
+// 滑鼠事件
 window.addEventListener('mousemove',e=>{
   if(!selectedPiece) return;
   if(dragFromSidebar && selectedPiece.classList.contains('piece-sidebar')){
-    const faces=JSON.parse(selectedPiece.dataset.faces||'[]');
-    const w=parseInt(selectedPiece.dataset.w), h=parseInt(selectedPiece.dataset.h);
-    selectedPiece=createBoardPiece(faces,w,h);
-    dragFromSidebar=false; dragging=true;
+    const faceUrl = selectedPiece.dataset.faceUrl;
+    const w = parseInt(selectedPiece.dataset.w), h = parseInt(selectedPiece.dataset.h);
+    const pieceIndex = parseInt(selectedPiece.dataset.pieceIndex);
+    selectedPiece = createBoardPiece(faceUrl, w, h, 0, 0, pieceIndex, faceUrl);
+    dragFromSidebar = false; dragging = true;
   }
   if(dragging && selectedPiece && selectedPiece.classList.contains('piece')){
-    const br=board.getBoundingClientRect();
-    selectedPiece.style.left=(e.clientX-br.left-offsetX)+'px';
-    selectedPiece.style.top=(e.clientY-br.top-offsetY)+'px';
+    const br = board.getBoundingClientRect();
+    selectedPiece.style.left = (e.clientX - br.left - offsetX) + 'px';
+    selectedPiece.style.top = (e.clientY - br.top - offsetY) + 'px';
   }
 });
 
@@ -141,65 +421,112 @@ window.addEventListener('mouseup',e=>{
   if(selectedPiece && selectedPiece.classList.contains('piece')) selectedPiece.style.zIndex='';
 });
 
-function snapToGrid(piece,col=null,row=null){
+// 觸控事件
+window.addEventListener('touchmove',e=>{
+  if(!selectedPiece) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  if(dragFromSidebar && selectedPiece.classList.contains('piece-sidebar')){
+    const faceUrl = selectedPiece.dataset.faceUrl;
+    const w = parseInt(selectedPiece.dataset.w), h = parseInt(selectedPiece.dataset.h);
+    const pieceIndex = parseInt(selectedPiece.dataset.pieceIndex);
+    selectedPiece = createBoardPiece(faceUrl, w, h, 0, 0, pieceIndex, faceUrl);
+    dragFromSidebar = false; dragging = true;
+  }
+  if(dragging && selectedPiece && selectedPiece.classList.contains('piece')){
+    const br = board.getBoundingClientRect();
+    selectedPiece.style.left = (touch.clientX - br.left - offsetX) + 'px';
+    selectedPiece.style.top = (touch.clientY - br.top - offsetY) + 'px';
+  }
+});
+
+window.addEventListener('touchend',e=>{
+  if(!selectedPiece) return;
+  if(dragging && selectedPiece.classList.contains('piece')) snapToGrid(selectedPiece);
+  dragging=false; dragFromSidebar=false;
+  if(selectedPiece && selectedPiece.classList.contains('piece')) selectedPiece.style.zIndex='';
+});
+
+function snapToGrid(piece){
   const cellW=board.clientWidth/COLS, cellH=board.clientHeight/ROWS;
-  if(col==null || row==null){
-    let x=parseFloat(piece.style.left)||0, y=parseFloat(piece.style.top)||0;
-    col=Math.round(x/cellW); row=Math.round(y/cellH);
-  }
-  col=Math.max(0, Math.min(COLS-1, col)); row=Math.max(0, Math.min(ROWS-1, row));
-  if(canPlace(piece,col,row)){
-    piece.style.left=(col*cellW)+'px'; piece.style.top=(row*cellH)+'px';
-    occupyGrid(piece,col,row);
-  }
-  updateFaceIndicator(piece);
-}
-
-function occupyGrid(piece,col,row){
-  const rotation=parseInt(piece.dataset.rotation||'0');
-  const w=parseInt(piece.dataset.w), h=parseInt(piece.dataset.h);
-  const isRotated=rotation%180!==0;
-  const pieceCols=Math.round((isRotated?h:w)/ (board.clientWidth/COLS));
-  const pieceRows=Math.round((isRotated?w:h)/ (board.clientHeight/ROWS));
-  for(let r=0;r<pieceRows;r++) for(let c=0;c<pieceCols;c++) boardGrid[row+r][col+c]=piece;
-}
-
-function canPlace(piece,col,row){
-  const rotation=parseInt(piece.dataset.rotation||'0');
-  const w=parseInt(piece.dataset.w), h=parseInt(piece.dataset.h);
-  const isRotated=rotation%180!==0;
-  const pieceCols=Math.round((isRotated?h:w)/ (board.clientWidth/COLS));
-  const pieceRows=Math.round((isRotated?w:h)/ (board.clientHeight/ROWS));
-  if(col+pieceCols>COLS || row+pieceRows>ROWS) return false;
-  for(let r=0;r<pieceRows;r++) for(let c=0;c<pieceCols;c++){
-    if(boardGrid[row+r][col+c] && boardGrid[row+r][col+c]!==piece) return false;
-  }
-  return true;
+  let x=parseFloat(piece.style.left)||0, y=parseFloat(piece.style.top)||0;
+  let col=Math.round(x/cellW); let row=Math.round(y/cellH);
+  piece.style.left=(col*cellW)+'px'; piece.style.top=(row*cellH)+'px';
 }
 
 function rotatePiece(piece,angle=90){
-  piece.dataset.rotation=(parseInt(piece.dataset.rotation||'0')+angle)%360;
-  piece.style.transform=`rotate(${piece.dataset.rotation}deg)`;
+  const current=parseInt(piece.dataset.rotation||'0');
+  const next=(current+angle)%360; piece.dataset.rotation=String(next);
+  applyTransformWithAnchor(piece);
+}
+
+function buildTransform(piece){
+  const rot=parseInt(piece.dataset.rotation||'0');
+  const flipH=piece.dataset.flipH==='1';
+  const flipV=piece.dataset.flipV==='1';
+  const sx=flipH?-1:1; const sy=flipV?-1:1;
+  // 先旋轉，再縮放鏡像，維持 top-left 為原點
+  return `rotate(${rot}deg) scale(${sx}, ${sy})`;
+}
+
+function applyTransformWithAnchor(piece){
+  piece.style.transformOrigin='top left';
+  const before=piece.getBoundingClientRect();
+  piece.style.transform=buildTransform(piece);
+  const after=piece.getBoundingClientRect();
+  const dx=after.left-before.left; const dy=after.top-before.top;
+  const left=parseFloat(piece.style.left)||0; const top=parseFloat(piece.style.top)||0;
+  piece.style.left=(left-dx)+'px'; piece.style.top=(top-dy)+'px';
   snapToGrid(piece);
 }
 
-function showFace(piece,idx){const faces=JSON.parse(piece.dataset.faces||'[]'); if(!faces||faces.length===0) return; const i=Math.min(Math.max(idx,0),faces.length-1); piece.querySelector('img').src=faces[i]; piece.dataset.faceIndex=i; updateFaceIndicator(piece);}
-function updateFaceIndicator(piece){const faces=JSON.parse(piece.dataset.faces||'[]'); const idx=parseInt(piece.dataset.faceIndex||'0'); const indicator=piece.querySelector('.face-indicator'); if(indicator) indicator.textContent=`${idx+1}/${Math.max(4,faces.length)}`;}
+printBtn.addEventListener('click',()=>{ window.print(); });
 
-editFacesBtn.addEventListener('click',()=>{if(!selectedPiece || !selectedPiece.classList.contains('piece')){alert('請先選擇盤上積木');return;} faceFilesInput.click();});
-faceFilesInput.addEventListener('change',e=>{
-  if(!selectedPiece||!selectedPiece.classList.contains('piece')) return;
-  const files=Array.from(faceFilesInput.files).slice(0,4);
-  if(files.length===0) return;
-  const urls=files.map(f=>URL.createObjectURL(f));
-  selectedPiece.dataset.faces=JSON.stringify(urls); selectedPiece.dataset.faceIndex='0'; showFace(selectedPiece,0); faceFilesInput.value='';
+flipHBtn.addEventListener('click',()=>{
+  if(!selectedPiece || !selectedPiece.classList.contains('piece')) return;
+  selectedPiece.dataset.flipH = selectedPiece.dataset.flipH==='1' ? '0' : '1';
+  applyTransformWithAnchor(selectedPiece);
 });
 
-window.addEventListener('keydown',e=>{if(!selectedPiece||!selectedPiece.classList.contains('piece')) return; if(['1','2','3','4'].includes(e.key)) showFace(selectedPiece,parseInt(e.key)-1); if(e.key.toLowerCase()==='r') rotatePiece(selectedPiece,90);});
+flipVBtn.addEventListener('click',()=>{
+  if(!selectedPiece || !selectedPiece.classList.contains('piece')) return;
+  selectedPiece.dataset.flipV = selectedPiece.dataset.flipV==='1' ? '0' : '1';
+  applyTransformWithAnchor(selectedPiece);
+});
 
-board.addEventListener('mousedown',e=>{if(e.target===board) selectedPiece=null;});
+// 手機上長按旋轉（替代雙擊）
+let longPressTimer = null;
+let longPressDelay = 500; // 500ms
 
-board.innerHTML='<div style="position:absolute;left:8px;top:8px;color:#5b6b83;font-size:13px">將圖片拖到左側暫置區 → 從暫置區拖到盤上。選中盤上積木可按 1-4 切換面、按 R 旋轉。</div>';
+function startLongPressTimer(piece) {
+  longPressTimer = setTimeout(() => {
+    rotatePiece(piece, 90);
+  }, longPressDelay);
+}
+
+function clearLongPressTimer() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+// 為盤上的積木加入長按旋轉
+function addLongPressRotation(piece) {
+  piece.addEventListener('touchstart', () => {
+    startLongPressTimer(piece);
+  });
+  
+  piece.addEventListener('touchend', () => {
+    clearLongPressTimer();
+  });
+  
+  piece.addEventListener('touchmove', () => {
+    clearLongPressTimer();
+  });
+}
+
+// 列印不需外部函式庫
+
+board.innerHTML='<div style="position:absolute;left:8px;top:8px;color:#5b6b83;font-size:13px">從每個積木暫置區拖到盤上，每個積木有4個面，點擊積木可切換面，雙擊旋轉（手機長按），右鍵移除積木，按下「列印」可直接列印棋盤。</div>';
 </script>
-</body>
-</html>
