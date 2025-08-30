@@ -207,7 +207,7 @@
     </div>
 
     <div id="sidebars"></div>
-    <div class="meta">說明：盤上積木可旋轉（雙擊旋轉），每個積木有4個面，點擊積木可切換面，每個積木同時僅能有一個面在盤上，可右鍵移除積木，匯出 PNG。紅色標籤表示積木未使用，綠色標籤表示積木已使用。</div>
+    <div class="meta">說明：盤上積木可旋轉（雙擊旋轉或使用R/L鍵），每個積木有4個面，點擊積木可切換面，每個積木同時僅能有一個面在盤上，可右鍵移除積木，匯出 PNG。紅色標籤表示積木未使用，綠色標籤表示積木已使用。</div>
   </div>
 
   <div id="board-wrap">
@@ -259,6 +259,8 @@
       <ul>
         <li><strong>ESC</strong>：關閉說明彈窗</li>
         <li><strong>Delete</strong>：刪除選中的積木</li>
+        <li><strong>R</strong> 或 <strong>右箭頭鍵</strong>：順時針旋轉選中的積木90度</li>
+        <li><strong>L</strong> 或 <strong>左箭頭鍵</strong>：逆時針旋轉選中的積木90度</li>
       </ul>
     </div>
   </div>
@@ -611,21 +613,47 @@ helpModal.addEventListener('click', (e) => {
   }
 });
 
-// ESC鍵關閉彈窗
+// 鍵盤控制
 document.addEventListener('keydown', (e) => {
+  // ESC鍵關閉彈窗
   if (e.key === 'Escape' && helpModal.style.display === 'block') {
     helpModal.style.display = 'none';
   }
+  
   // Delete鍵刪除選中的積木
   if (e.key === 'Delete' && selectedPiece && selectedPiece.classList.contains('piece')) {
     removeBoardPiece(selectedPiece);
     selectedPiece = null;
   }
+  
+  // 鍵盤旋轉積木
+  if (selectedPiece && selectedPiece.classList.contains('piece')) {
+    switch(e.key) {
+      case 'r': // R鍵順時針旋轉90度
+      case 'R':
+        e.preventDefault();
+        rotatePiece(selectedPiece, 90);
+        break;
+      case 'l': // L鍵逆時針旋轉90度
+      case 'L':
+        e.preventDefault();
+        rotatePiece(selectedPiece, -90);
+        break;
+      case 'ArrowLeft': // 左箭頭鍵逆時針旋轉90度
+        e.preventDefault();
+        rotatePiece(selectedPiece, -90);
+        break;
+      case 'ArrowRight': // 右箭頭鍵順時針旋轉90度
+        e.preventDefault();
+        rotatePiece(selectedPiece, 90);
+        break;
+    }
+  }
 });
 
 // 列印不需外部函式庫
 
-board.innerHTML='<div style="position:absolute;left:8px;top:8px;color:#5b6b83;font-size:13px">從每個積木暫置區拖到盤上，每個積木有4個面，點擊積木可切換面，雙擊旋轉，右鍵移除積木，按下「列印」可直接列印棋盤。</div>';
+board.innerHTML='<div style="position:absolute;left:8px;top:8px;color:#5b6b83;font-size:13px">從每個積木暫置區拖到盤上，每個積木有4個面，點擊積木可切換面，雙擊或按R/L鍵旋轉，右鍵移除積木，按下「列印」可直接列印棋盤。</div>';
 </script>
 </body>
 </html>
